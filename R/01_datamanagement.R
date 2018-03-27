@@ -26,7 +26,7 @@ library(forecast)
 
 
 data$date <- 
-  with(data,paste(year,month,day,sep = "-")) %>% 
+  with(data,paste(year,month,day,hour,sep = "-")) %>% 
   as.Date()
 
 names(data)
