@@ -25,11 +25,43 @@ library(TSA)
 library(forecast)
 
 
+
 data$date <- 
-  with(data,paste(year,month,day,hour,sep = "-")) %>% 
-  as.Date()
+  with(data,paste0(year,"-",month,"-",day," ",hour,":00:00")) %>% 
+  strptime(.,format='%Y-%m-%d %H:%M:%S') %>% as.POSIXct()
 
 names(data)
+
+# Check missings
+
+data$pm2.5 %>% is.na() %>% table()
+
+# Delete first 24 hourse (all missings)
+data %<>% filter(!No <= 24)
+
+# Imputation 
+library(mtsdi)
+
+impvars <- ~hour + pm2.5 + DEWP + TEMP + PRES + cbwd + Iws + Is + Ir
+
+imputed <- mnimput(impvars,
+                   data,
+                   eps=1e-3,
+                   ts=TRUE, 
+                   method="spline",
+                   sp.control=list(df=c(7,7,7,7,7,7,7,7,7))) # no idea what dis does haha
+
+summary(imputed)
+
+data_imp <- imputed$filled.dataset
+
+# now merge back or with old meta-data (NO, time, date etc. )
+
+
+
+
+
+###
 
 ggplot(data,
        aes(x = date,
