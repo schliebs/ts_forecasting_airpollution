@@ -12,17 +12,13 @@
 # Is: Cumulated hours of snow 
 # Ir: Cumulated hours of rain 
 
+source("R/00_packages.R")
 
-data <- read.csv(file = "data/PRSA_data_2010.1.1-2014.12.31.csv")
+
+data <- read.csv(file = "data/raw/PRSA_data_2010.1.1-2014.12.31.csv")
 head(data)
 
-library(plyr)
-library(tidyverse)
-library(magrittr)
 
-# TS
-library(TSA)
-library(forecast)
 
 
 
@@ -40,7 +36,6 @@ data$pm2.5 %>% is.na() %>% table()
 data %<>% filter(!No <= 24)
 
 # Imputation 
-library(mtsdi)
 
 impvars <- ~hour + pm2.5 + DEWP + TEMP + PRES + cbwd + Iws + Is + Ir
 
@@ -54,49 +49,14 @@ imputed <- mnimput(impvars,
 summary(imputed)
 
 data_imp <- imputed$filled.dataset
+names(data) [!names(data) %in% names(data_imp)]
+
+merged <- data.frame(data[names(data) [!names(data) %in% names(data_imp)]],
+                     data_imp)
+
+saveRDS(merged,"data/data_imputed.rds")
 
 # now merge back or with old meta-data (NO, time, date etc. )
 
 
-
-
-
-###
-
-ggplot(data,
-       aes(x = date,
-           y = pm2.5)) + 
-  geom_line()
-
-ggplot(data,
-       aes(x = date,
-           y = log(pm2.5))) + 
-  geom_line()
-
-
-# Check stationarity
-
-data$logdif[2:nrow(data)] <- diff(log(data$pm2.5))
-
-data$logdif [data$logdif %in% c(-Inf,Inf)] <- NA
-data %<>% na.omit()
-
-
-ts.plot(data$pm2.5)
-adf.test(data$pm2.5)
-
-acf(data$pm2.5)
-pacf(data$pm2.5)
-
-
-# With logdif
-ts.plot(data$logdif)
-adf.test(data$logdif)
-
-acf(data$logdif)
-pacf(data$logdif)
-
-
-# Achtung: Imputation for NAs?
-which(is.na(x))
 
