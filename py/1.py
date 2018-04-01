@@ -54,11 +54,21 @@ reframed = series_to_supervised(scaled, 1, 1)
 reframed.drop(reframed.columns[[9, 10, 11, 12, 13, 14, 15]], axis=1, inplace=True)
 print(reframed.head())
 
+# reframed.to_csv("reframed.csv")
+
 # split into train and test sets
 values = reframed.values
+values.tofile("values.csv", sep=",")
 n_train_hours = 365 * 24
 train = values[:n_train_hours, :]
 test = values[n_train_hours:, :]
+
+# train_panda = DataFrame(train)
+# test_panda = DataFrame(test)
+
+# train_panda.to_csv("train_panda.csv")
+# test_panda.to_csv("test_panda.csv")
+
 # split into input and outputs
 train_X, train_y = train[:, :-1], train[:, -1]
 test_X, test_y = test[:, :-1], test[:, -1]
@@ -75,6 +85,7 @@ model.compile(loss='mae', optimizer='adam')
 # fit network
 history = model.fit(train_X, train_y, epochs=50, batch_size=72, validation_data=(test_X, test_y), verbose=2,
                     shuffle=False)
+
 # plot history
 pyplot.plot(history.history['loss'], label='train')
 pyplot.plot(history.history['val_loss'], label='test')
@@ -83,6 +94,10 @@ pyplot.show()
 
 # make a prediction
 yhat = model.predict(test_X)
+
+yhat_panda = DataFrame(yhat)
+yhat_panda.to_csv("yhat.csv")
+
 test_X = test_X.reshape((test_X.shape[0], test_X.shape[2]))
 
 # invert scaling for forecast
@@ -99,3 +114,4 @@ inv_y = inv_y[:, 0]
 # calculate RMSE
 rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
 print('Test RMSE: %.3f' % rmse)
+
