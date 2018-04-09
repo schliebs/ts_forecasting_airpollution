@@ -154,21 +154,24 @@ mean((df$pred - df$true)^2) %>% sqrt()
 
 ########
 
-dflong <- 
-  df %>% 
-  dplyr::select(-error,-sq_error) %>% 
+
+dd <- 
+  data.frame(t,p) %>% 
+  mutate(id = 1:length(t)) %>% 
   gather(var,value,-id)
+
 library(hrbrthemes)
 
 gg <- 
-  ggplot(dflong %>%  filter(id < 100)) + 
+  ggplot(dd %>%  filter(id < 100)) + 
   geom_line(aes(x = id,
                 y = value,
-                color = var, 
-                alpha = var),
+                color = var),
             size = 1.3) + 
-  scale_alpha_manual(values = c("pred" = 1,
-                                "true" = 1)) + 
+  scale_color_manual(name = NULL,
+                     values = c("p" = "red",
+                                "t" = "blue"),
+                     labels = c("Predicted","True")) + 
   labs(x = "time step",
        y = "pollution",
        title = "Predicted vs. True pm2.5 Pollution values",
@@ -176,14 +179,54 @@ gg <-
   theme_ipsum(grid = "Y");gg
 
 
-ggsave("test.png",
+ggsave("test4b.png",
        gg,
-       height = 10,
-       width = 16,
+       height = 2.5,
+       width = 10,
        dpi = 1000,
        device = "png")
 
 ##
+
+
+dd2<- 
+  data.frame(t,p) %>% 
+  mutate(id = 1:length(t)) 
+library(hrbrthemes)
+
+gg2 <- 
+  ggplot(dd2,aes(x = p,
+                 y = t)) + 
+  geom_point(size = 1) + 
+  geom_smooth(color = "red",method = "lm")+
+  labs(x = "Predicted Value",
+       y = "Observed Value",
+       title = "Predicted vs. Observed pm2.5 Pollution values",
+       subtitle = "Scatterplot")+
+  theme_ipsum(grid = "Y");gg2
+
+
+ggsave("test3b.png",
+       gg2,
+       height = 2.5,
+       width = 10,
+       dpi = 1000,
+       device = "png")
+
+##
+
+
+
+
+
+
+
+
+
+
+
+
+###
 
 names(df)
 df2 <- df %>%  filter(id < 100)
