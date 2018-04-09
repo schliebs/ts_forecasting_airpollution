@@ -111,6 +111,7 @@ df <- data.frame(pred = preds_rollPRED$pm2.5,
          sq_error = (pred-true)^2)
 
 head(df)
+test = rescale(df$true, max())
 
 dflong <- df %>% 
   gather(var,value,-id)
@@ -143,3 +144,4 @@ back <- lala(X = df$true,x[1],x[2])
 
 mean((df$pred - df$true)^2) %>% sqrt()
 
+head(lala(df$true, min(data$pm2.5), max(data$pm2.5)))

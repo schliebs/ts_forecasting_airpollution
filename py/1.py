@@ -88,7 +88,7 @@ model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
 model.add(Dense(1))
 model.compile(loss='mae', optimizer='adam')
 # fit network
-history = model.fit(train_X, train_y, epochs=10, batch_size=72, validation_data=(test_X, test_y), verbose=2,
+history = model.fit(train_X, train_y, epochs=1, batch_size=72, validation_data=(test_X, test_y), verbose=2,
                     shuffle=False)
 
 # plot history
@@ -104,10 +104,28 @@ yhat = model.predict(test_X)
 #yhat_panda.to_csv("yhat.csv")
 
 test_X = test_X.reshape((test_X.shape[0], test_X.shape[2]))
+train_X_test = train_X.reshape((train_X.shape[0], train_X.shape[2]))
 
 rmse = sqrt(mean_squared_error(test_y, yhat))
 print(mean_squared_error(test_y, yhat))
 print('Test RMSE: %.3f' % rmse)
+print(DataFrame(test_y).head())
+
+print(train_y.shape)
+print(train_X.shape)
+print(test_X.shape)
+print(test_y.shape)
+
+y = concatenate((train_y[:, None], train_X_test[:, 1:]), axis=1)
+y = scaler.inverse_transform(y)
+y = DataFrame(y)
+print(y.head())
+
+y = concatenate((test_y[:, None], test_X[:, 1:]), axis=1)
+y = scaler.inverse_transform(y)
+y = DataFrame(y)
+print(y.head())
+
 
 # invert scaling for forecast
 inv_yhat = concatenate((yhat, test_X[:, 1:]), axis=1)
@@ -119,7 +137,6 @@ test_y = test_y.reshape((len(test_y), 1))
 inv_y = concatenate((test_y, test_X[:, 1:]), axis=1)
 inv_y = scaler.inverse_transform(inv_y)
 inv_y = inv_y[:, 0]
-print(DataFrame(inv_y).head())
 
 # calculate RMSE
 rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
