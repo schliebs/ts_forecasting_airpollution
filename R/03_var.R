@@ -8,12 +8,8 @@ names(data)
 names(data)
 variables <- c("hour","pm2.5","DEWP","TEMP","PRES","cbwd","Iws","Is","Ir")
 
-data$date
-xts(data,data$date)
 
 ##########
-
-
 
 lala <- function(X, min, max) {
   X_std = (X - min(X)) / (max(X) - min(X))
@@ -70,8 +66,8 @@ names(modeldata)
 
 
 
-var=VARselect(modeldata,lag.max=50)
-var
+# var=VARselect(modeldata,lag.max=50)
+# var
 
 
 library(tsDyn)
@@ -101,7 +97,7 @@ acf(var1_residuals[,1],lag.max = 30)
 pacf(var1_residuals[,1],lag.max = 30)
 
 
-preds_roll <- predict_rolling(VARRR, nroll=35039)
+preds_roll <- predict_rolling(VARRR, nroll=35038)
 preds_rollTRUE <- preds_roll[["true"]]
 preds_rollPRED <- preds_roll[["pred"]]
 
