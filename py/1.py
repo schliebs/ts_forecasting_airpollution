@@ -38,18 +38,24 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 
 
 # load dataset
-dataset = read_csv('pollution.csv', header=0, index_col=0)
+dataset = read_csv('pollution_py.csv', header=0, index_col=0)
+print(dataset)
 values = dataset.values
+values.tofile("values_orig.csv", sep=";")
 # integer encode direction
 encoder = LabelEncoder()
 values[:, 4] = encoder.fit_transform(values[:, 4])
+values.tofile("values_orig_aftertrafo.csv", sep=";")
 # ensure all data is float
 values = values.astype('float32')
 # normalize features
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled = scaler.fit_transform(values)
-# frame as supervised learning
+scaled_df = DataFrame(scaled)
+scaled_df.to_csv("scaled.csv", sep=";")
+# frame as supervised learning (make a copy of each variable and put them in as a t+1 column)
 reframed = series_to_supervised(scaled, 1, 1)
+reframed.to_csv("reframed_orig.csv", sep=";")
 # drop columns we don't want to predict
 reframed.drop(reframed.columns[[9, 10, 11, 12, 13, 14, 15]], axis=1, inplace=True)
 print(reframed.head())

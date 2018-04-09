@@ -17,4 +17,4 @@ dataset = dataset[24:]
 # summarize first 5 rows
 print(dataset.head(5))
 # save to file
-dataset.to_csv('pollution.csv')
+dataset.to_csv('pollution_py.csv')
