@@ -1,6 +1,6 @@
 source("R/00_packages.R")
 
-data <- readRDS("data/data_imputed.rds")
+data <- readRDS("data/data_imputed.rds") 
 names(data)
 
 #########
@@ -12,19 +12,32 @@ data$date
 xts(data,data$date)
 
 ##########
-train <- data[1:(365*24),] %>% 
-  dplyr::select(one_of(variables))
 
-test <- data[((365*24)+1):(nrow(data)-1),]%>% 
-  dplyr::select(one_of(variables))
+
+
+lala <- function(X, min, max) {
+  X_std = (X - min(X)) / (max(X) - min(X))
+  x_scaled = X_std * (max-min)+min
+  return(x_scaled)
+}
+
+
+full <- 
+  data %>%
+  dplyr::select(one_of(variables)) %>% 
+  mutate_all(funs(lala(.,0,1)))
+
+train <- full[1:(365*24),] 
+
+test <- full[((365*24)+1):(nrow(data)-1),]
 
 full <- bind_rows(train,test)
 
-
-varmodel <- VAR(y = train , # Data with endogenous Vars 
-             p = 1, # Lag-Order
-             type="none", # Whatever dis does
-             season = NULL) # maybe hour/month seasonality 
+# 
+# varmodel <- VAR(y = train , # Data with endogenous Vars 
+#              p = 1, # Lag-Order
+#              type="none", # Whatever dis does
+#              season = NULL) # maybe hour/month seasonality 
 
 
 # Modelfitting
@@ -43,26 +56,18 @@ adf.test(full$Ir)
 # minmax-scale depvar
 
 
-lala <- function(X) {
-  X_std = (X - min(X)) / (max(X) - min(X))
-  x_scaled = X_std * (1-0)+0
-  return(x_scaled)
-}
 
 
 ###
 hour = factor(full$hour)
 dummies = model.matrix(~hour)[,-1]
 
-modeldata1 <- 
+modeldata<- 
   full %>% 
   dplyr::select(-hour)
 
 names(modeldata)
 
-modeldata <- 
-  modeldata1 %>%
-  mutate_all(funs(lala(.)))
 
 
 var=VARselect(modeldata,lag.max=50)
@@ -70,9 +75,10 @@ var
 
 
 library(tsDyn)
+names(modeldata)
 
 VARRR <- lineVar(modeldata, 
-                 lag=5, 
+                 lag=30, 
                  model = c("VAR"),
                  exogen = dummies)
 
@@ -91,10 +97,11 @@ var1_residuals <- resid(VARRR)
 var1_residuals
 
 par(mfrow=c(1,1))
-acf(var1_residuals[,1])
+acf(var1_residuals[,1],lag.max = 30)
+pacf(var1_residuals[,1],lag.max = 30)
 
 
-preds_roll <- predict_rolling(VARRR, nroll=500)
+preds_roll <- predict_rolling(VARRR, nroll=35039)
 preds_rollTRUE <- preds_roll[["true"]]
 preds_rollPRED <- preds_roll[["pred"]]
 
@@ -103,19 +110,24 @@ library(tidyverse)
 
 df <- data.frame(pred = preds_rollPRED$pm2.5,
                  true = preds_rollTRUE$pm2.5) %>% 
-  mutate(id = 1:nrow(.)) 
+  mutate(id = 1:nrow(.))  %>% 
+  mutate(error = abs(pred-true),
+         sq_error = (pred-true)^2)
+
+head(df)
 
 dflong <- df %>% 
   gather(var,value,-id)
 
 gg <- 
-  ggplot(dflong %>% filter(id < 20)) + 
+  ggplot(dflong %>% filter(id < 100)) + 
   geom_line(aes(x = id,
                 y = value,
-                color = var, alpha = var),
+                color = var, 
+                alpha = var),
             size = 1.3) + 
-  scale_alpha_manual(values = c("pred" = 0.5,
-                                "true" = 0.5));gg
+  scale_alpha_manual(values = c("pred" = 1,
+                                "true" = 1));gg
 
 
 ggsave("test.pdf",
@@ -126,26 +138,12 @@ ggsave("test.pdf",
        device = "pdf")
 
 mean(df$pred - df$true)
-range(df$pred - df$true)
+mean((df$pred-df$true)^2)
+
+sqrt(mean((df$pred-df$true)^2))
+
+x = range(data$pm2.5)
+back <- lala(X = df$true,x[1],x[2])
 
 mean((df$pred - df$true)^2) %>% sqrt()
 
-
-
-
-#Test for serial autocorrelation using the Portmanteau test
-#Rerun var model with other suggested lags if H0 can be rejected at 0.05
-serial.test(VARRR, lags.pt = 10, type = "PT.asymptotic")
-
-#ARCH test (Autoregressive conditional heteroscedasdicity)
-arch.test(var, lags.multi = 10)
-
-summary(var) #hm
-
-
-#Forecasting
-prd <- predict(var, n.ahead = 1, ci = 0.95, dumvar = NULL)
-print(prd)
-plot(prd, "single")
-
-View(prd$endog)
