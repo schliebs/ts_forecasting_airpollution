@@ -6,7 +6,7 @@ names(data)
 #########
 
 names(data)
-variables <- c("pm2.5","DEWP","TEMP","PRES","cbwd","Iws","Is","Ir")
+variables <- c("hour","pm2.5","DEWP","TEMP","PRES","cbwd","Iws","Is","Ir")
 
 data$date
 xts(data,data$date)
@@ -40,21 +40,58 @@ adf.test(full$Ir)
 
 ##
 
+# minmax-scale depvar
+
+
+lala <- function(X) {
+  X_std = (X - min(X)) / (max(X) - min(X))
+  x_scaled = X_std * (1-0)+0
+  return(x_scaled)
+}
+
+
+###
+hour = factor(full$hour)
+dummies = model.matrix(~hour)[,-1]
+
+modeldata1 <- 
+  full %>% 
+  dplyr::select(-hour)
+
+names(modeldata)
+
+modeldata <- 
+  modeldata1 %>%
+  mutate_all(funs(lala(.)))
+
+
+var=VARselect(modeldata,lag.max=50)
+var
+
 
 library(tsDyn)
-VARRR <- lineVar(full, 
-                 lag=10, 
+
+VARRR <- lineVar(modeldata, 
+                 lag=5, 
                  model = c("VAR"),
-                 include = )
+                 exogen = dummies)
+
+
+
 VARRR
 summary(VARRR)
 
+toLatex(VECM.EG)
+toLatex(summary(VARRR))
+# options("show.signif.stars"=FALSE)
+# toLatex(summary(VECM.EG), parenthese="Pvalue")
+# options("show.signif.stars"=TRUE)
+
 var1_residuals <- resid(VARRR)
 var1_residuals
-acf(var1_residuals)
-par(mfrow=c(2,2))
+
+par(mfrow=c(1,1))
 acf(var1_residuals[,1])
-acf(var1_residuals[,2])
 
 
 preds_roll <- predict_rolling(VARRR, nroll=500)
