@@ -36,10 +36,8 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
         agg.dropna(inplace=True)
     return agg
 
-
 # load dataset
-dataset = read_csv('pollution_py.csv', header=0, index_col=0)
-print(dataset)
+dataset = read_csv('pollution_imputed.csv', header=0, index_col=0)
 values = dataset.values
 values.tofile("values_orig.csv", sep=";")
 # integer encode direction
@@ -52,7 +50,8 @@ values = values.astype('float32')
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled = scaler.fit_transform(values)
 scaled_df = DataFrame(scaled)
-scaled_df.to_csv("scaled.csv", sep=";")
+print(scaled_df.head())
+#scaled_df.to_csv("scaled.csv", sep=";")
 # frame as supervised learning (make a copy of each variable and put them in as a t+1 column)
 reframed = series_to_supervised(scaled, 1, 1)
 reframed.to_csv("reframed_orig.csv", sep=";")
@@ -89,7 +88,7 @@ model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
 model.add(Dense(1))
 model.compile(loss='mae', optimizer='adam')
 # fit network
-history = model.fit(train_X, train_y, epochs=50, batch_size=72, validation_data=(test_X, test_y), verbose=2,
+history = model.fit(train_X, train_y, epochs=10, batch_size=72, validation_data=(test_X, test_y), verbose=2,
                     shuffle=False)
 
 # plot history
@@ -101,10 +100,14 @@ pyplot.show()
 # make a prediction
 yhat = model.predict(test_X)
 
-yhat_panda = DataFrame(yhat)
-yhat_panda.to_csv("yhat.csv")
+#yhat_panda = DataFrame(yhat)
+#yhat_panda.to_csv("yhat.csv")
 
 test_X = test_X.reshape((test_X.shape[0], test_X.shape[2]))
+
+rmse = sqrt(mean_squared_error(test_y, yhat))
+print(mean_squared_error(test_y, yhat))
+print('Test RMSE: %.3f' % rmse)
 
 # invert scaling for forecast
 inv_yhat = concatenate((yhat, test_X[:, 1:]), axis=1)
@@ -116,8 +119,10 @@ test_y = test_y.reshape((len(test_y), 1))
 inv_y = concatenate((test_y, test_X[:, 1:]), axis=1)
 inv_y = scaler.inverse_transform(inv_y)
 inv_y = inv_y[:, 0]
+print(DataFrame(inv_y).head())
 
 # calculate RMSE
 rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
+print(mean_squared_error(inv_y, inv_yhat))
 print('Test RMSE: %.3f' % rmse)
 
