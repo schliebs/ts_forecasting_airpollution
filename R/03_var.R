@@ -20,22 +20,22 @@ lala <- function(X, min, max) {
 lalaBack <- function(X, min, max) {
   X_std = (X - min(X)) / (max(X) - min(X))
   x_scaled = X_std * (max-min)+min
-  x_scaled <- round(x_scaled, 3)
+ # x_scaled <- round(x_scaled, 3)
   return(x_scaled)
 }
 
 
 full <- 
   data %>%
-  dplyr::select(one_of(variables)) %>% 
-  mutate_all(funs(lala(.,0,1))) %>% 
-  mutate_all(funs(round(.,6)))
+  dplyr::select(one_of(variables))# %>% 
+  #mutate_all(funs(lala(.,0,1))) #%>% 
+ # mutate_all(funs(round(.,6)))
 
 ### Invert Scaling test
 #fullback <- lalaBack(full$pm2.5, min(data$pm2.5), max(data$pm2.5))
 #testback <- lalaBack(test$pm2.5, min(data$pm2.5), max(data$pm2.5))
 
-train <- full[2:(365*24)]
+train <- full[2:(365*24),]
 test <- full[((365*24)+1):nrow(data),]
 
 full <- bind_rows(train,test)
@@ -111,6 +111,7 @@ pacf(var1_residuals[,1],lag.max = 30)
 preds_roll <- predict_rolling(VARRR, nroll=35039)
 preds_rollTRUE <- preds_roll[["true"]]
 preds_rollPRED <- preds_roll[["pred"]]
+
 df <- data.frame(pred = preds_rollPRED$pm2.5,
                  true = preds_rollTRUE$pm2.5) %>% 
   mutate(id = 1:nrow(.))  %>% 
@@ -125,38 +126,23 @@ head(df)
 #  dplyr::select(one_of(variables)) %>% 
 #  mutate_all(funs(lala(.,min(data$xxxxx),1))) %>% ##keine ahnung wie ich hier das min/max von jeder zeile anspreche
 
-head(lalaBack(df$true, min(data$pm2.5[((365*24)+1):length(data$pm2.5)]), max(data$pm2.5[((365*24)+1):length(data$pm2.5)])))
+t <- (lalaBack(df$true, 
+              min(data$pm2.5[((365*24)+1):length(data$pm2.5)]), 
+              max(data$pm2.5[((365*24)+1):length(data$pm2.5)])))
 
-library(ggplot2)
-library(tidyverse)
-
-dflong <- df %>% 
-  gather(var,value,-id)
-
-gg <- 
-  ggplot(dflong %>% filter(id < 100)) + 
-  geom_line(aes(x = id,
-                y = value,
-                color = var, 
-                alpha = var),
-            size = 1.3) + 
-  scale_alpha_manual(values = c("pred" = 1,
-                                "true" = 1));gg
+p <- (lalaBack(df$pred, 
+               min(data$pm2.5[((365*24)+1):length(data$pm2.5)]), 
+               max(data$pm2.5[((365*24)+1):length(data$pm2.5)])))
 
 
-ggsave("test.pdf",
-       gg,
-       height = 10,
-       width = 16,
-       dpi = 2000,
-       device = "pdf")
+sqrt(mean((df$true-df$pred)^2))
+sqrt(mean((t-p)^2))
+mean(abs(t-p))
 
-mean(df$pred - df$true)
-mean((df$pred-df$true)^2)
+hist(df$true)
 
-sqrt(mean((df$pred-df$true)^2))
+sd(df$true)
+sqrt(mean((diff(df$true)^2)))
 
-x = range(data$pm2.5)
-back <- lala(X = df$true,x[1],x[2])
-
-mean((df$pred - df$true)^2) %>% sqrt()
+ddd <- data.frame(t = df$true,l = lag(df$true))
+sqrt(mean((ddd$t-ddd$l)^2,na.rm = T))
