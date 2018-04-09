@@ -110,6 +110,7 @@ rmse = sqrt(mean_squared_error(test_y, yhat))
 print(mean_squared_error(test_y, yhat))
 print('Test RMSE: %.3f' % rmse)
 print(DataFrame(test_y).head())
+print(DataFrame(test_y).tail())
 
 print(train_y.shape)
 print(train_X.shape)
@@ -121,9 +122,13 @@ y = scaler.inverse_transform(y)
 y = DataFrame(y)
 print(y.head())
 
+print(scaler.feature_range)
+print(scaler.data_min_)
+print(scaler.data_max_)
 y = concatenate((test_y[:, None], test_X[:, 1:]), axis=1)
 y = scaler.inverse_transform(y)
 y = DataFrame(y)
+print(len(y))
 print(y.head())
 
 

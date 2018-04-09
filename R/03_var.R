@@ -14,6 +14,7 @@ variables <- c("hour","pm2.5","DEWP","TEMP","PRES","cbwd","Iws","Is","Ir")
 lala <- function(X, min, max) {
   X_std = (X - min(X)) / (max(X) - min(X))
   x_scaled = X_std * (max-min)+min
+  x_scaled <- round(x_scaled, 3)
   return(x_scaled)
 }
 
@@ -21,7 +22,12 @@ lala <- function(X, min, max) {
 full <- 
   data %>%
   dplyr::select(one_of(variables)) %>% 
-  mutate_all(funs(lala(.,0,1)))
+  mutate_all(funs(lala(.,0,1))) %>% 
+  mutate_all(funs(round(.,6)))
+
+fullback <- lala(full$pm2.5, min(data$pm2.5), max(data$pm2.5))
+
+test <- lala(full$pm2.5, min(full$pm2.5), max(full$pm2.5))
 
 train <- full[1:(365*24),] 
 
@@ -100,10 +106,6 @@ pacf(var1_residuals[,1],lag.max = 30)
 preds_roll <- predict_rolling(VARRR, nroll=35038)
 preds_rollTRUE <- preds_roll[["true"]]
 preds_rollPRED <- preds_roll[["pred"]]
-
-library(ggplot2)
-library(tidyverse)
-
 df <- data.frame(pred = preds_rollPRED$pm2.5,
                  true = preds_rollTRUE$pm2.5) %>% 
   mutate(id = 1:nrow(.))  %>% 
@@ -111,7 +113,30 @@ df <- data.frame(pred = preds_rollPRED$pm2.5,
          sq_error = (pred-true)^2)
 
 head(df)
-test = rescale(df$true, max())
+
+
+#df_backscaled <- 
+#  data %>%
+#  dplyr::select(one_of(variables)) %>% 
+#  mutate_all(funs(lala(.,min(data$xxxxx),1))) %>% ##keine ahnung wie ich hier das min/max von jeder zeile anspreche
+
+head(lala(df$true, min(test$pm2.5), max(test$pm2.5)))
+head(lala(df$true, min(data$pm2.5), max(data$pm2.5)))
+
+library(ggplot2)
+library(tidyverse)
+
+preds_roll_for_scaling <- predict_rolling(VARRR, nroll=35039)
+preds_roll_for_scalingTRUE <- preds_roll_for_scaling[["true"]]
+preds_roll_for_scalingPRED <- preds_roll_for_scaling[["pred"]]
+df_for_scaling <- data.frame(pred = preds_roll_for_scalingPRED$pm2.5,
+                 true = preds_roll_for_scalingTRUE$pm2.5) %>% 
+  mutate(id = 1:nrow(.))  %>% 
+  mutate(error = abs(pred-true),
+         sq_error = (pred-true)^2)
+
+head(df_for_scaling)
+head(lala(df_for_scaling$true, min(data$pm2.5), max(data$pm2.5)))
 
 dflong <- df %>% 
   gather(var,value,-id)
@@ -143,5 +168,3 @@ x = range(data$pm2.5)
 back <- lala(X = df$true,x[1],x[2])
 
 mean((df$pred - df$true)^2) %>% sqrt()
-
-head(lala(df$true, min(data$pm2.5), max(data$pm2.5)))
