@@ -14,12 +14,6 @@ variables <- c("hour","pm2.5","DEWP","TEMP","PRES","cbwd","Iws","Is","Ir")
 lala <- function(X, min, max) {
   X_std = (X - min(X)) / (max(X) - min(X))
   x_scaled = X_std * (max-min)+min
-  return(x_scaled)
-}
-
-lalaBack <- function(X, min, max) {
-  X_std = (X - min(X)) / (max(X) - min(X))
-  x_scaled = X_std * (max-min)+min
   x_scaled <- round(x_scaled, 3)
   return(x_scaled)
 }
@@ -31,12 +25,13 @@ full <-
   mutate_all(funs(lala(.,0,1))) %>% 
   mutate_all(funs(round(.,6)))
 
-### Invert Scaling test
-#fullback <- lalaBack(full$pm2.5, min(data$pm2.5), max(data$pm2.5))
-#testback <- lalaBack(test$pm2.5, min(data$pm2.5), max(data$pm2.5))
+fullback <- lala(full$pm2.5, min(data$pm2.5), max(data$pm2.5))
 
-train <- full[2:(365*24)]
-test <- full[((365*24)+1):nrow(data),]
+test <- lala(full$pm2.5, min(full$pm2.5), max(full$pm2.5))
+
+train <- full[1:(365*24),] 
+
+test <- full[((365*24)+1):(nrow(data)-1),]
 
 full <- bind_rows(train,test)
 
@@ -108,7 +103,7 @@ acf(var1_residuals[,1],lag.max = 30)
 pacf(var1_residuals[,1],lag.max = 30)
 
 
-preds_roll <- predict_rolling(VARRR, nroll=35039)
+preds_roll <- predict_rolling(VARRR, nroll=35038)
 preds_rollTRUE <- preds_roll[["true"]]
 preds_rollPRED <- preds_roll[["pred"]]
 df <- data.frame(pred = preds_rollPRED$pm2.5,
@@ -125,12 +120,43 @@ head(df)
 #  dplyr::select(one_of(variables)) %>% 
 #  mutate_all(funs(lala(.,min(data$xxxxx),1))) %>% ##keine ahnung wie ich hier das min/max von jeder zeile anspreche
 
-head(lalaBack(df$true, min(data$pm2.5[((365*24)+1):length(data$pm2.5)]), max(data$pm2.5[((365*24)+1):length(data$pm2.5)])))
+head(lala(df$true, min(test$pm2.5), max(test$pm2.5)))
+head(lala(df$true, min(data$pm2.5), max(data$pm2.5)))
 
 library(ggplot2)
 library(tidyverse)
 
-dflong <- df %>% 
+preds_roll_for_scaling <- predict_rolling(VARRR, nroll=35039)
+preds_roll_for_scalingTRUE <- preds_roll_for_scaling[["true"]]
+preds_roll_for_scalingPRED <- preds_roll_for_scaling[["pred"]]
+df_for_scaling <- data.frame(pred = preds_roll_for_scalingPRED$pm2.5,
+                 true = preds_roll_for_scalingTRUE$pm2.5) %>% 
+  mutate(id = 1:nrow(.))  %>% 
+  mutate(error = abs(pred-true),
+         sq_error = (pred-true)^2)
+
+head(df_for_scaling)
+head(lala(df_for_scaling$true, min(data$pm2.5), max(data$pm2.5)))
+
+
+
+
+mean(df$pred - df$true)
+mean((df$pred-df$true)^2)
+
+sqrt(mean((df$pred-df$true)^2))
+
+x = range(data$pm2.5)
+backTRUE <- lala(X = df$true,x[1],x[2])
+backPRED <- lala(X = df$pred,x[1],x[2])
+mean((df$pred - df$true)^2) %>% sqrt()
+
+
+########
+
+dflong <- 
+  df %>% 
+  dplyr::select(-error,-sq_error) %>% 
   gather(var,value,-id)
 library(hrbrthemes)
 
@@ -146,16 +172,16 @@ gg <-
   labs(x = "time step",
        y = "pollution",
        title = "Predicted vs. True pm2.5 Pollution values",
-       subtitle = "Selected 100-day timeframe ")
+       subtitle = "Selected 100-day timeframe ")+
   theme_ipsum(grid = "Y");gg
 
 
-ggsave("test.pdf",
+ggsave("test.png",
        gg,
        height = 10,
        width = 16,
-       dpi = 2000,
-       device = "pdf")
+       dpi = 1000,
+       device = "png")
 
 ##
 
