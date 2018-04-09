@@ -1,5 +1,6 @@
 from math import sqrt
 from numpy import concatenate
+from numpy import mean
 from matplotlib import pyplot
 from pandas import read_csv
 from pandas import DataFrame
@@ -88,7 +89,7 @@ model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
 model.add(Dense(1))
 model.compile(loss='mae', optimizer='adam')
 # fit network
-history = model.fit(train_X, train_y, epochs=1, batch_size=72, validation_data=(test_X, test_y), verbose=2,
+history = model.fit(train_X, train_y, epochs=50, batch_size=72, validation_data=(test_X, test_y), verbose=2,
                     shuffle=False)
 
 # plot history
@@ -144,6 +145,9 @@ inv_y = scaler.inverse_transform(inv_y)
 inv_y = inv_y[:, 0]
 
 # calculate RMSE
+mae = abs(inv_y-inv_yhat)
+print(mean(mae))
+
 rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
 print(mean_squared_error(inv_y, inv_yhat))
 print('Test RMSE: %.3f' % rmse)

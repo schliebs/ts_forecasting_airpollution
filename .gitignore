@@ -40,3 +40,4 @@ offline/
 .Rproj.user
 .idea/
 img/
+*.pdf
